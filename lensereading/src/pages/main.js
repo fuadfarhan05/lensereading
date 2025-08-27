@@ -31,8 +31,21 @@ function Main() {
   const [showCredits, setShowCredits] = useState(false);
   const [userPlan, setUserPlan] = useState("free");
 
+  const [targetLang, setTargetLang] = useState("en");
+
+  const [lookupBox, setLookupBox] = useState(null);
+  const [selectedText, setSelectedText] = useState("");
+  const [mode, setMode] = useState("upload"); // "upload" | "text"
+  const [manualText, setManualText] = useState("");
+
+
+// when highlighting, always use your single highlight color
+  const markStyle = "background-color: #5cfbb1ff; color: #000; border-radius: 3px; padding: 0 2px;";
+
+
   const user = auth.currentUser;
 
+  // Fetch and reset credits
   useEffect(() => {
     if (!user) return;
 
@@ -51,20 +64,13 @@ function Main() {
         const today = new Date();
         if (!lastReset || lastReset.toDateString() !== today.toDateString()) {
           const resetCredits = plan === "free" ? 5 : currentCredits;
-          await updateDoc(userRef, {
-            credits: resetCredits,
-            lastReset: Timestamp.fromDate(today)
-          });
+          await updateDoc(userRef, { credits: resetCredits, lastReset: Timestamp.fromDate(today) });
           currentCredits = resetCredits;
         }
 
         setCredits(currentCredits);
       } else {
-        await setDoc(userRef, {
-          plan: "free",
-          credits: 5,
-          lastReset: Timestamp.fromDate(new Date())
-        });
+        await setDoc(userRef, { plan: "free", credits: 5, lastReset: Timestamp.fromDate(new Date()) });
         setCredits(5);
         setUserPlan("free");
       }
@@ -73,6 +79,7 @@ function Main() {
     fetchCredits();
   }, [user]);
 
+  // AI loading messages
   useEffect(() => {
     if (!aiLoading) return;
     let i = 0;
@@ -92,10 +99,7 @@ function Main() {
     formData.append("pdf", file);
 
     try {
-      const res = await fetch("http://localhost:8000/upload", {
-        method: "POST",
-        body: formData
-      });
+      const res = await fetch("http://localhost:8000/upload", { method: "POST", body: formData });
       const data = await res.json();
       setPdfText(data.text || "");
       setHighlightedContent("");
@@ -107,48 +111,91 @@ function Main() {
     }
   };
 
-  const handleAIHighlight = async () => {
+const handleAIHighlight = async () => {
+  // Pick the correct text depending on mode
+  const textToProcess = mode === "text" ? manualText : pdfText;
+  if (!textToProcess) return;
+
+  if (typeof credits !== "number" || credits <= 0) {
+    alert("You have no credits left! Come back tomorrow for free credits or upgrade your plan.");
+    return;
+  }
+
+  setAiLoading(true);
+
+  try {
+    const res = await fetch("http://localhost:8000/ai-highlight", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: textToProcess })
+    });
+    const data = await res.json();
+
+    if (data.highlights && Array.isArray(data.highlights)) {
+      let newContent = textToProcess;
+      const markStyle = "background-color: #5cfbb1ff; color: #000; border-radius: 3px; padding: 0 2px;";
+
+      data.highlights.forEach(h => {
+        const regex = new RegExp(h.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi");
+        newContent = newContent.replace(regex, `<mark style="${markStyle}">$&</mark>`);
+      });
+
+      setHighlightedContent(newContent);
+
+      const userRef = doc(db, "users", user.uid);
+      const newCredits = credits - 1;
+      await updateDoc(userRef, { credits: newCredits });
+      setCredits(newCredits);
+    } else {
+      alert("AI did not find any important sentences to highlight.");
+    }
+  } catch (err) {
+    console.error(err);
+    alert("AI highlighting failed");
+  } finally {
+    setAiLoading(false);
+  }
+};
+
+
+  const handleTranslate = async () => {
     if (!pdfText) return;
 
     if (typeof credits !== "number" || credits <= 0) {
-      alert("You have no credits left! Come back tomorrow for free credits or upgrade your plan.");
+      alert("You have no credits left! Come back tomorrow or upgrade your plan.");
       return;
     }
 
     setAiLoading(true);
-
     try {
-      const res = await fetch("http://localhost:8000/ai-highlight", {
+      const res = await fetch("http://localhost:8000/translate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: pdfText })
+        body: JSON.stringify({ text: pdfText, targetLang })
       });
       const data = await res.json();
+      setHighlightedContent(data.translation || "Translation failed");
 
-      if (data.highlights && Array.isArray(data.highlights)) {
-        let newContent = pdfText;
-        const markStyle = "background-color: #5cfbb1ff; color: #000; border-radius: 3px; padding: 0 2px;";
+      const userRef = doc(db, "users", user.uid);
+      const newCredits = credits - 1;
+      await updateDoc(userRef, { credits: newCredits });
+      setCredits(newCredits);
 
-        data.highlights.forEach(h => {
-          const regex = new RegExp(h.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi");
-          newContent = newContent.replace(regex, `<mark style="${markStyle}">$&</mark>`);
-        });
-
-        setHighlightedContent(newContent);
-
-        const userRef = doc(db, "users", user.uid);
-        const newCredits = credits - 1;
-        await updateDoc(userRef, { credits: newCredits });
-        setCredits(newCredits);
-      } else {
-        alert("AI did not find any important sentences to highlight.");
-      }
     } catch (err) {
       console.error(err);
-      alert("AI highlighting failed");
+      alert("Translation request failed");
     } finally {
       setAiLoading(false);
     }
+  };
+
+  const handleTextSelect = () => {
+    const selection = window.getSelection().toString().trim();
+    if (selection) {
+      const rect = window.getSelection().getRangeAt(0).getBoundingClientRect();
+      setSelectedText(selection);
+      setLookupBox({ x: rect.left + window.scrollX, y: rect.top + window.scrollY - 30 });
+    } else setLookupBox(null);
   };
 
   return (
@@ -156,10 +203,7 @@ function Main() {
       <h1 className="title">LENSE</h1>
       <div className="top-bar">
         <div className="top-buttons">
-          <button
-            className="upgrade-btn"
-            onClick={() => window.location.href = "/pricing"}
-          >
+          <button className="upgrade-btn" onClick={() => (window.location.href = "/pricing")}>
             Upgrade to Pro
           </button>
           <SignOutButton />
@@ -167,50 +211,112 @@ function Main() {
       </div>
 
       <div className="container">
-        <div className="glass-panel">
-          {loading ? (
-            <div className="loading-panel">
-              <div className="loading-spinner"></div>
-              <p>Parsing PDF...</p>
-            </div>
-          ) : aiLoading ? (
-            <div className="loading-panel">
-              <div className="loading-spinner"></div>
-              <p>{loadingMessage}</p>
-            </div>
-          ) : (
-            <div dangerouslySetInnerHTML={{ __html: highlightedContent || pdfText || "Upload a PDF to see content here..." }} />
-          )}
-        </div>
+     <div className="glass-panel" onMouseUp={handleTextSelect}>
+  <div className="mode-toggle">
+    <button 
+      className={`toggle-btn ${mode === "upload" ? "active" : ""}`} 
+      onClick={() => setMode("upload")}
+    >
+      📂 Upload
+    </button>
+    <button 
+      className={`toggle-btn ${mode === "text" ? "active" : ""}`} 
+      onClick={() => setMode("text")}
+    >
+      ✍️ Text
+    </button>
+  </div>
+
+  {loading ? (
+    <div className="loading-panel">
+      <div className="loading-spinner"></div>
+      <p>Parsing PDF...</p>
+    </div>
+  ) : aiLoading ? (
+    <div className="loading-panel">
+      <div className="loading-spinner"></div>
+      <p>{loadingMessage}</p>
+    </div>
+  ) : mode === "text" ? (
+    <div className="text-mode">
+      <textarea
+        className ="glass-textarea"
+        value={manualText}
+        onChange={(e) => setManualText(e.target.value)}
+        placeholder="Type or paste your text here..."
+      />
+      <button className="green-btn2" onClick={handleAIHighlight}>
+        ✨ AI Highlight the Text
+      </button>
+      {highlightedContent && (
+        <div
+          className="highlighted-output"
+          dangerouslySetInnerHTML={{ __html: highlightedContent }}
+        />
+      )}
+    </div>
+  ) : (
+    <div
+      dangerouslySetInnerHTML={{ 
+        __html: highlightedContent || pdfText || "Upload a PDF to see content here..." 
+      }}
+    />
+  )}
+</div>
+
+
+
+
+        {/* Lookup popup → Google search */}
+        {lookupBox && (
+          <div
+            style={{
+              position: "absolute",
+              top: lookupBox.y,
+              left: lookupBox.x,
+              background: "#1e1e1e",
+              color: "white",
+              padding: "6px 10px",
+              borderRadius: "6px",
+              cursor: "pointer",
+              zIndex: 1000
+            }}
+            onClick={() =>
+              window.open(`https://www.google.com/search?q=${encodeURIComponent(selectedText)}`, "_blank")
+            }
+          >
+            <FaSearch style={{ marginRight: "5px" }} /> Look Up
+          </div>
+        )}
 
         <div className="right-section">
           <div className="button-group">
             <button className="green-btn" onClick={handleAIHighlight} disabled={aiLoading || !pdfText || credits <= 0}>
               <FaHighlighter /> AI Highlight
             </button>
-            <button className="green-btn"><FaSearch /> Look Up</button>
+
+            <select className="lang-dropdown" value={targetLang} onChange={(e) => setTargetLang(e.target.value)}>
+              <option value="en">English</option>
+              <option value="es">Spanish</option>
+              <option value="fr">French</option>
+              <option value="de">German</option>
+              <option value="it">Italian</option>
+              <option value="zh">Chinese (Simplified)</option>
+              <option value="ja">Japanese</option>
+            </select>
+
+            <button className="green-btn" onClick={handleTranslate} disabled={aiLoading || !pdfText}>
+              🌐 Translate
+            </button>
           </div>
 
-          {/* Credits Box */}
-          <div
-            className="credits-box"
-            onClick={() => setShowCredits(!showCredits)}
-            style={{ color: credits <= 0 ? "red" : "white" }}
-          >
+          <div className="credits-box" onClick={() => setShowCredits(!showCredits)} style={{ color: credits <= 0 ? "red" : "white" }}>
             <span style={{ marginRight: "5px" }}>💎</span>
             {credits} Credits
             {showCredits && (
               <div className="credits-popup" style={{ marginTop: "5px", display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
-                <span>
-                  {credits > 0
-                    ? `You have ${credits} credits remaining for today.`
-                    : "You have 0 credits."}
-                </span>
-                <button
-                  className="green-btn"
-                  onClick={() => window.location.href = "/pricing"}
-                  style={{ marginTop: "5px" }}
-                >
+                <span>{credits > 0 ? `You have ${credits} credits remaining for today.` : "You have 0 credits."}</span>
+                <button className="green-btn" onClick={() => (window.location.href = "/pricing")} style={{ marginTop: "5px" }}>
                   Upgrade To Pro
                 </button>
               </div>
@@ -220,7 +326,9 @@ function Main() {
           <div className="upload-glass">
             <p className="upload-text"><FaUpload /> Upload Article</p>
             <input type="file" onChange={handleFileChange} />
-            <button className="green-btn" onClick={handleUpload}>Upload</button>
+            <button className="green-btn" onClick={handleUpload}>
+              Upload
+            </button>
           </div>
         </div>
       </div>

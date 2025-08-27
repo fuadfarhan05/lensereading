@@ -6,14 +6,14 @@ function ProtectedRoute({ children }) {
   const [user, loading] = useAuthState(auth);
 
   if (loading) {
-    return <p>Loading...</p>; // show spinner/loader while checking
+    return <p>Loading...</p>; 
   }
 
   if (!user) {
-    return <Navigate to="/" replace />; // redirect to SignIn if not logged in
+    return <Navigate to="/" replace />; 
   }
 
-  return children; // if logged in, show the page
+  return children; 
 }
 
 export default ProtectedRoute;
