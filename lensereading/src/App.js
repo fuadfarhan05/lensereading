@@ -23,6 +23,14 @@ function App() {
 
   return (
     <Router>
+      <div style={{ textAlign: "center", margin: "20px 0" }}>
+        <img 
+          src="/lenseai.png"
+          alt="App Banner" 
+          style={{ width: "200px", borderRadius: "12px" }}
+        />
+      </div>
+
       <Routes>
         {/* Default route */}
         <Route path="/" element={user ? <Navigate to="/main" /> : <Navigate to="/signin" />} />

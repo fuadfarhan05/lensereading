@@ -5,6 +5,11 @@ const cors = require("cors");
 const OpenAI = require("openai");
 require("dotenv").config();
 
+const Stripe = require("stripe");
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY); 
+
+
+
 const app = express();
 const PORT = 8000;
 
@@ -43,7 +48,7 @@ app.post("/ai-highlight", async (req, res) => {
     `;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
+      model: "gpt-4o-mini",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.2, 
     });
@@ -69,7 +74,7 @@ app.post("/translate", async (req, res) => {
 
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
+      model: "gpt-4o-mini",
       messages: [
         { role: "system", content: `You are a helpful translator for a platform called Lense. Translate everything into ${targetLang}.` },
         { role: "user", content: text }
@@ -84,25 +89,28 @@ app.post("/translate", async (req, res) => {
   }
 });
 
-// ---------------- Lookup ----------------
-app.post("/lookup", async (req, res) => {
-  const { word } = req.body;
-
+// ---------------- Stripe Checkout ----------------
+app.post("/create-checkout-session", async (req, res) => {
   try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: "You are a dictionary assistant. Provide concise definitions." },
-        { role: "user", content: `Define the word: ${word}` },
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      mode: "subscription",
+      line_items: [
+        {
+          price: "price_1S0rzs02VgskHHKJL3xqJbVy", // <-- replace with your test Price ID from Stripe
+          quantity: 1,
+        },
       ],
+      success_url: "http://localhost:3000/success",
+      cancel_url: "http://localhost:3000/cancel",
     });
 
-    const definition = completion.choices[0].message.content;
-    res.json({ definition });
+    res.json({ url: session.url });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ definition: "Error fetching definition." });
+    res.status(500).json({ error: err.message });
   }
 });
+
 
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));

@@ -112,11 +112,10 @@ function Main() {
   };
 
 const handleAIHighlight = async () => {
-  // Pick the correct text depending on mode
   const textToProcess = mode === "text" ? manualText : pdfText;
   if (!textToProcess) return;
 
-  if (typeof credits !== "number" || credits <= 0) {
+  if (userPlan === "free" && (typeof credits !== "number" || credits <= 0)) {
     alert("You have no credits left! Come back tomorrow for free credits or upgrade your plan.");
     return;
   }
@@ -129,6 +128,7 @@ const handleAIHighlight = async () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text: textToProcess })
     });
+
     const data = await res.json();
 
     if (data.highlights && Array.isArray(data.highlights)) {
@@ -142,10 +142,12 @@ const handleAIHighlight = async () => {
 
       setHighlightedContent(newContent);
 
-      const userRef = doc(db, "users", user.uid);
-      const newCredits = credits - 1;
-      await updateDoc(userRef, { credits: newCredits });
-      setCredits(newCredits);
+      if (userPlan === "free") {
+        const userRef = doc(db, "users", user.uid);
+        const newCredits = credits - 1;
+        await updateDoc(userRef, { credits: newCredits });
+        setCredits(newCredits);
+      }
     } else {
       alert("AI did not find any important sentences to highlight.");
     }
@@ -158,36 +160,42 @@ const handleAIHighlight = async () => {
 };
 
 
-  const handleTranslate = async () => {
-    if (!pdfText) return;
 
-    if (typeof credits !== "number" || credits <= 0) {
-      alert("You have no credits left! Come back tomorrow or upgrade your plan.");
-      return;
-    }
+const handleTranslate = async () => {
+  if (!pdfText) return;
 
-    setAiLoading(true);
-    try {
-      const res = await fetch("http://localhost:8000/translate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: pdfText, targetLang })
-      });
-      const data = await res.json();
-      setHighlightedContent(data.translation || "Translation failed");
+  // Only block free users if credits are 0
+  if (userPlan === "free" && (typeof credits !== "number" || credits <= 0)) {
+    alert("You have no credits left! Come back tomorrow or upgrade your plan.");
+    return;
+  }
 
+  setAiLoading(true);
+
+  try {
+    const res = await fetch("http://localhost:8000/translate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: pdfText, targetLang })
+    });
+
+    const data = await res.json();
+    setHighlightedContent(data.translation || "Translation failed");
+
+    // Only deduct credits for free users
+    if (userPlan === "free") {
       const userRef = doc(db, "users", user.uid);
       const newCredits = credits - 1;
       await updateDoc(userRef, { credits: newCredits });
       setCredits(newCredits);
-
-    } catch (err) {
-      console.error(err);
-      alert("Translation request failed");
-    } finally {
-      setAiLoading(false);
     }
-  };
+  } catch (err) {
+    console.error(err);
+    alert("Translation request failed");
+  } finally {
+    setAiLoading(false);
+  }
+};
 
   const handleTextSelect = () => {
     const selection = window.getSelection().toString().trim();
@@ -200,8 +208,12 @@ const handleAIHighlight = async () => {
 
   return (
     <div className="app">
-      <h1 className="title">LENSE</h1>
       <div className="top-bar">
+         <img 
+          src="/lenseai.png"
+          alt="App Banner" 
+          style={{ width: "200px", borderRadius: "12px" }}
+        />
         <div className="top-buttons">
           <button className="upgrade-btn" onClick={() => (window.location.href = "/pricing")}>
             Upgrade to Pro

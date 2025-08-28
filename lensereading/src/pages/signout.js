@@ -23,8 +23,8 @@ function SignOutButton() {
 
 const styles = {
   button: {
-    background: "rgba(255, 255, 255, 0.2)",
-    border: "1px solid rgba(255, 255, 255, 0.3)",
+    background: "rgba(242, 57, 57, 0.2)",
+    border: "1px solid rgba(255, 18, 18, 0.3)",
     backdropFilter: "blur(10px)",
     color: "#fff",
     padding: "10px 20px",
