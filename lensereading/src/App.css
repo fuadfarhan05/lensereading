@@ -558,4 +558,269 @@ mark:hover {
   resize: none;
 }
 
+.sidebar {
+  width: 250px;
+  height: 100vh;
+  background: rgb(29, 46, 39); /* glassmorphism effect */
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: #ffffff;
+  padding-top: 30px;
+  font-weight: bold;
+  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.5);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  position: fixed;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+/* Custom Scrollbar */
+.sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar::-webkit-scrollbar-thumb {
+  background-color: rgba(147, 239, 183, 0.514);
+  border-radius: 10px;
+}
+
+/* List Styling */
+.sidebar-items {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* Item */
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  padding: 14px 24px;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.3s ease;
+  border-left: 4px solid transparent;
+}
+
+.sidebar-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-left: 4px solid #7bf9ac;
+  transform: scale(1.02);
+  box-shadow: inset 2px 0 0 #78f8ad;
+}
+
+/* Icon */
+.sidebar-icon {
+  font-size: 22px;
+  margin-right: 14px;
+  color: #60faa0;
+  transition: transform 0.3s ease;
+}
+
+.sidebar-item:hover .sidebar-icon {
+  transform: rotate(8deg) scale(1.1);
+}
+
+:root {
+  --blue: hsl(150, 100%, 75%);
+  --purple: hsl(265, 100%, 80%);
+  --pink: hsl(320, 100%, 80%);
+  --orange: hsl(93, 100%, 75%);
+  --yellow: hsl(50, 100%, 75%);
+  --red: hsl(0, 100%, 75%);
+}
+
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background: #000000;
+}
+
+.student-dashboard {
+  padding: 20px;
+}
+
+.dashboard-title {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.dashboard-layout {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+/* --- Class Form --- */
+.class-form-card {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  padding: 16px;
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+  transition: transform 0.2s ease;
+}
+
+.class-form-card:hover {
+  transform: translateY(-3px);
+}
+
+.class-form-card h2 {
+  margin-bottom: 12px;
+  color: #fff;
+}
+
+.form-group {
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: bold;
+  color: #fff;
+}
+
+.form-group input,
+.form-group select {
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.3);
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+}
+
+.color-options {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.color-circle {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+}
+
+.color-circle.selected {
+  border: 2px solid #fff;
+}
+
+.submit-btn {
+  margin-top: 10px;
+  padding: 10px 14px;
+  border: none;
+  background: rgba(93, 255, 171, 0.8);
+  color: rgb(0, 0, 0);
+  border-radius: 6px;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: background 0.2s ease;
+}
+
+.submit-btn:hover {
+  background: rgba(198, 255, 222, 0.9);
+}
+
+/* --- Schedule Grid --- */
+.schedule-grid {
+  flex: 2;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 12px;
+}
+
+.day-column {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  padding: 10px;
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+  min-height: 200px;
+}
+
+.day-title {
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 8px;
+  text-align: center;
+  color: #fff;
+}
+
+.class-block {
+  padding: 6px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(10px) saturate(140%);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: transform 0.15s ease;
+}
+
+.class-block:hover {
+  transform: scale(1.03);
+}
+
+.class-name {
+  display: block;
+  font-weight: bold;
+  color:#000;
+}
+
+.class-time {
+  display: block;
+  font-size: 12px;
+  color: #000000;
+}
+
+
+.class-block {
+  position: relative;
+  padding: 10px;
+  border-radius: 8px;
+  margin: 6px 0;
+  transition: transform 0.2s ease;
+}
+
+.class-block:hover {
+  transform: scale(1.02);
+}
+
+.remove-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  font-size: 14px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.class-block:hover .remove-btn {
+  opacity: 1;
+}
+
 

@@ -6,6 +6,8 @@ import SignIn from "./pages/signin";
 import SignUp from "./pages/signup";
 import Main from "./pages/main";  
 import Pricing from "./pages/payment";
+import Sidebar from "./components/sidebar";
+import Dashboard from "./pages/student";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -30,10 +32,13 @@ function App() {
           style={{ width: "200px", borderRadius: "12px" }}
         />
       </div>
+      {user && <Sidebar />}
+      
 
       <Routes>
         {/* Default route */}
         <Route path="/" element={user ? <Navigate to="/main" /> : <Navigate to="/signin" />} />
+        <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/signin" />} />
 
         {/* Sign-in and Sign-up */}
         <Route path="/signin" element={!user ? <SignIn /> : <Navigate to="/main" />} />
